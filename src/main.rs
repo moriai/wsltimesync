@@ -63,12 +63,12 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         println!("timestamp: {}", DateTime::<Local>::from(mtime).to_rfc3339());
         println!("  current: {}", DateTime::<Local>::from(estimated).to_rfc3339());
         if let Ok(diff) = mtime.duration_since(estimated) {
-            println!("difference: {:?} delayed", diff);
+            println!("difference: {:?} behind", diff);
             let newtime = SystemTime::now() + diff;
             newtime.settime()?;
         } else {
             let diff = estimated.duration_since(mtime)?;
-            println!("differncee: {:?} preceded", diff);
+            println!("differncee: {:?} ahead", diff);
         }
     } else {
         println!("Not supported on this platform");
