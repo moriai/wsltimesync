@@ -1,0 +1,9 @@
+[package]
+name = "ftimesync"
+version = "0.1.0"
+authors = ["Satoshi Moriai <satoshi.moriai@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+libc = "0.2"
+chrono = "0.4"
