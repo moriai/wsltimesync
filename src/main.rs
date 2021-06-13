@@ -1,6 +1,7 @@
 use std::{error,env};
 use std::fs::{self,File};
 use std::time::{SystemTime,SystemTimeError};
+use std::fmt;
 use libc::{CLOCK_REALTIME,timespec};
 use chrono::prelude::{DateTime,Local};
 
@@ -14,22 +15,57 @@ extern "C" {
     pub fn clock_settime(clk_id: clockid_t, tp: *const timespec) -> c_int;
 }
 
+#[derive(Debug)]
+enum SetTimeError {
+    PermissionDenied,
+    TimeError(SystemTimeError),
+}
+
+impl fmt::Display for SetTimeError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            SetTimeError::PermissionDenied =>
+                write!(f, "A user other than the super-user attempted to set the time."),
+            SetTimeError::TimeError(ref e) => e.fmt(f),
+        }
+    }
+}
+
+impl error::Error for SetTimeError {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+        match *self {
+            SetTimeError::PermissionDenied => None,
+            SetTimeError::TimeError(ref e) => Some(e),
+        }
+    }
+}
+
+impl From<SystemTimeError> for SetTimeError {
+    fn from(err: SystemTimeError) -> SetTimeError {
+        SetTimeError::TimeError(err)
+    }
+}
+
 trait SetTime {
-    fn settime(&self) -> Result<(), SystemTimeError>;
+    fn settime(&self) -> Result<(), SetTimeError>;
 }
 
 impl SetTime for SystemTime {
-    fn settime(&self) -> Result<(), SystemTimeError> {
+    fn settime(&self) -> Result<(), SetTimeError> {
         let ts = match self.duration_since(SystemTime::UNIX_EPOCH) {
             Ok(unixtime) => 
                 timespec {
                     tv_sec: unixtime.as_secs() as i64,
                     tv_nsec: unixtime.subsec_nanos() as i64
                 },
-            Err(e) => return Err(e)
+            Err(e) => return Err(SetTimeError::TimeError(e))
         };
-        let _ = unsafe { clock_settime(CLOCK_REALTIME, &ts) };
-        Ok(())
+        let ret = unsafe { clock_settime(CLOCK_REALTIME, &ts) };
+        if ret == 0 {
+            Ok(())
+        } else {
+            Err(SetTimeError::PermissionDenied)
+        }
     }
 }
 
