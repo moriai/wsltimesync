@@ -7,4 +7,3 @@ edition = "2018"
 [dependencies]
 libc = "0.2"
 nix = "0.21"
-chrono = "0.4"
