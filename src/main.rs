@@ -1,34 +1,24 @@
 use std::{error,env};
 use std::fs::{self,File};
-use std::time::{SystemTime,SystemTimeError};
-use libc::{CLOCK_REALTIME,timespec};
+use std::time::SystemTime;
 use chrono::prelude::{DateTime,Local};
-
+use nix::time::ClockId;
+use nix::sys::time::TimeSpec;
 #[cfg(not(target_os = "macos"))]
-use libc::clock_settime;
-
+use nix::time;
 #[cfg(target_os = "macos")]
-use libc::{clockid_t,c_int};
+mod macos;
 #[cfg(target_os = "macos")]
-extern "C" {
-    pub fn clock_settime(clk_id: clockid_t, tp: *const timespec) -> c_int;
-}
+use macos::time;
 
 trait SetTime {
-    fn settime(&self) -> Result<(), SystemTimeError>;
+    fn settime(&self) -> Result<(), Box<dyn error::Error>>;
 }
 
 impl SetTime for SystemTime {
-    fn settime(&self) -> Result<(), SystemTimeError> {
-        let ts = match self.duration_since(SystemTime::UNIX_EPOCH) {
-            Ok(unixtime) => 
-                timespec {
-                    tv_sec: unixtime.as_secs() as i64,
-                    tv_nsec: unixtime.subsec_nanos() as i64
-                },
-            Err(e) => return Err(e)
-        };
-        let _ = unsafe { clock_settime(CLOCK_REALTIME, &ts) };
+    fn settime(&self) -> Result<(), Box<dyn error::Error>> {
+        let unixtime = self.duration_since(SystemTime::UNIX_EPOCH)?;
+        time::clock_settime(ClockId::CLOCK_REALTIME, TimeSpec::from(unixtime))?;
         Ok(())
     }
 }
