@@ -11,11 +11,11 @@ mod macos;
 use macos::time;
 
 trait SetTime {
-    fn settime(&self) -> Result<(), Box<dyn error::Error>>;
+    fn set_time(&self) -> Result<(), Box<dyn error::Error>>;
 }
 
 impl SetTime for SystemTime {
-    fn settime(&self) -> Result<(), Box<dyn error::Error>> {
+    fn set_time(&self) -> Result<(), Box<dyn error::Error>> {
         let unixtime = self.duration_since(SystemTime::UNIX_EPOCH)?;
         time::clock_settime(ClockId::CLOCK_REALTIME, TimeSpec::from(unixtime))?;
         Ok(())
@@ -44,7 +44,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         if let Ok(diff) = mtime.duration_since(estimated) {
             println!("difference: {:?} behind", diff);
             let newtime = SystemTime::now() + diff;
-            newtime.settime()?;
+            newtime.set_time()?;
         } else {
             let diff = estimated.duration_since(mtime)?;
             println!("differncee: {:?} ahead", diff);
