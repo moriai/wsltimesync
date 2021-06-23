@@ -47,7 +47,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
             newtime.set_time()?;
         } else {
             let diff = estimated.duration_since(mtime)?;
-            println!("differncee: {:?} ahead", diff);
+            println!("difference: {:?} ahead", diff);
         }
     } else {
         println!("Not supported on this platform");
