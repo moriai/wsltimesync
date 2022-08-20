@@ -20,23 +20,22 @@ impl SetTime for SystemTime {
     }
 }
 
-fn default_timestamp() -> &'static str {
+fn default_timestamp() -> String {
     if let Ok(dir) = env::var("USERPROFILE") {
-        let fname = dir + "/.wsltimestamp";
-        Box::leak(fname.into_boxed_str())
+        dir + "/.wsltimestamp"
     } else {
-        "timestamp"
+        String::from("timestamp")
     }
 }
 
 fn main() -> Result<(), Box<dyn error::Error>> {    
     let args: Vec<String> = env::args().collect();
-    let timestamp = if args.len() < 2 { default_timestamp() } else { &args[1] };
+    let timestamp = if args.len() < 2 { default_timestamp() } else { String::from(&args[1]) };
 
     println!("timestamp file: {}", timestamp);
 
     let start_time = SystemTime::now();
-    { let _ = File::create(timestamp)?; }
+    { let _ = File::create(&timestamp)?; }
     let end_time = SystemTime::now();
     let estimated = start_time + (end_time.duration_since(start_time)?/2);
 
@@ -45,7 +44,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     #[cfg(debug)]
     println!("       end: {}", DateTime::<Local>::from(end_time).to_rfc3339());
 
-    let metadata = fs::metadata(timestamp)?;
+    let metadata = fs::metadata(&timestamp)?;
     if let Ok(mtime) = metadata.modified() {
         println!(" timestamp: {}", DateTime::<Local>::from(mtime).to_rfc3339());
         println!("   current: {}", DateTime::<Local>::from(estimated).to_rfc3339());
